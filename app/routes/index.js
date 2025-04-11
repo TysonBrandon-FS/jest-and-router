@@ -1,13 +1,28 @@
 const express = require("express");
 const router = express.Router();
+const fs = require('fs');
 
-let data = [
-     {id: 1, name: "Brandon"},
-     {id: 2, name: "Nick"}
+// Read data from file
+const getData = () => {
+    try {
+        return JSON.parse(fs.readFileSync('data.json'));
+    } catch {
+        const defaultData = [
+            {id: 1, name: "Brandon"},
+            {id: 2, name: "Nick"}
+        ];
+        fs.writeFileSync('data.json', JSON.stringify(defaultData));
+        return defaultData;
+    }
+}
 
-    ]
+// Save data to file
+const saveData = (data) => {
+    fs.writeFileSync('data.json', JSON.stringify(data));
+}
 
 router.get("/", (req, res) => {
+    const data = getData();
     res.status(200).json({
         message: "GET to /API",
         data: data,
@@ -17,7 +32,7 @@ router.get("/", (req, res) => {
 
 router.get("/:id", (req,res) => {
     let { id } = req.params;
-
+    const data = getData();
     let index = data.findIndex(item => item.id === parseInt(id));
 
     if (index > data.length) {
@@ -36,6 +51,7 @@ router.get("/:id", (req,res) => {
 
 router.post("/", (req,res) => {
     const { name } = req.body
+    const data = getData();
     let newID = data.length + 1
 
     if(!name) {
@@ -46,6 +62,7 @@ router.post("/", (req,res) => {
     }
 
     data.push({id: newID, name: name})
+    saveData(data);
 
     res.status(200).json({
         message: "POST to /API",
@@ -57,6 +74,7 @@ router.post("/", (req,res) => {
 router.patch("/:id", (req, res) => {
     const { id } = req.params;
     const { name } = req.body;
+    const data = getData();
 
     if (!name) {
         return res.status(400).json({
@@ -75,6 +93,7 @@ router.patch("/:id", (req, res) => {
     }
 
     data[index].name = name;
+    saveData(data);
 
     res.status(200).json({
         message: "PATCH to /API",
@@ -85,6 +104,7 @@ router.patch("/:id", (req, res) => {
 
 router.delete("/:id", (req, res) => {
     const { id } = req.params;
+    const data = getData();
     let index = data.findIndex(item => item.id === parseInt(id));
     
     if (index > data.length) {
@@ -94,12 +114,13 @@ router.delete("/:id", (req, res) => {
         });
     }
     data.splice(index, 1);
+    saveData(data);
+    
     res.status(200).json({
         message: "DELETE to /API",
         data: data,
         metadata: { hostname: req.hostname, method: req.method }
     });
 });
-
 
 module.exports = router;
